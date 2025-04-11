@@ -19,9 +19,10 @@ ATLAS_H :: 16
 
 debug_draw_grid := false
 
-current_atlas    : ^rl.Texture2D
-current_color    : int
-current_color_bg : int
+current_atlas       : ^rl.Texture2D
+current_transparent : int
+current_color       : int
+current_color_bg    : int
 
 pallet: [16]rl.Color = {
 	{0x00, 0x00, 0x00, 0xFF}, // 0: black
@@ -49,6 +50,7 @@ main :: proc() {
 	rl.SetTargetFPS(60)
 
 	_clear_mem_page := 120
+	init()
 	for !rl.WindowShouldClose() {
 		rl.BeginDrawing()
 		rl.ClearBackground({})
@@ -68,20 +70,8 @@ main :: proc() {
 			}
 		}
 
-		atlas(&ATLAS)
-		for y in 0..<16 {
-			for x in 0..<16 {
-				col := (x+y)%16 
-				color(col)
-				if col == 0 do colorbg(7)
-				else do colorbg(0)
 
-				put(x,y, x+y*16)
-			}
-		}
-
-		color(7); colorbg(0)
-		put_strf(0,17, "Hello, [c8][b7]World[b0][c7]! PRINT TEST!")
+		update()
 
 		rl.EndDrawing()
 
@@ -94,6 +84,7 @@ main :: proc() {
 			}
 		}
 	}
+	release()
 	rl.UnloadTexture(ATLAS)
 
 	rl.CloseWindow()
@@ -156,7 +147,7 @@ put_str :: proc(x,y: int, str: string) {
 put :: proc(x,y: int, sprid: int) {
 	ux := cast(c.int)(sprid % ATLAS_W)
 	uy := cast(c.int)(sprid / ATLAS_W)
-	if current_color_bg > 0 {
+	if current_color_bg != current_transparent {
 		rl.DrawRectangleV(
 			{cast(f32)(x*CELL_PIXEL), cast(f32)(y*CELL_PIXEL)},
 			{cast(f32)CELL_PIXEL, cast(f32)CELL_PIXEL},
@@ -173,6 +164,9 @@ put :: proc(x,y: int, sprid: int) {
 
 atlas :: #force_inline proc(atlas: ^rl.Texture2D) {
 	current_atlas = atlas
+}
+transparentbg :: #force_inline proc(t: int) {
+	current_transparent = t
 }
 colorbg :: #force_inline proc(c: int) {
 	current_color_bg = c
