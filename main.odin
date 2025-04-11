@@ -3,6 +3,8 @@ package main
 import "core:fmt"
 import "core:c"
 import "core:math"
+import "core:strconv"
+import win32 "core:sys/windows"
 import rl "vendor:raylib"
 
 CELL_SIZE	:: 24
@@ -46,6 +48,7 @@ main :: proc() {
 
 	rl.SetTargetFPS(60)
 
+	_clear_mem_page := 120
 	for !rl.WindowShouldClose() {
 		rl.BeginDrawing()
 		rl.ClearBackground({})
@@ -68,20 +71,88 @@ main :: proc() {
 		atlas(&ATLAS)
 		for y in 0..<16 {
 			for x in 0..<16 {
-				color(x)
-				if x == 0 do colorbg(7)
+				col := (x+y)%16 
+				color(col)
+				if col == 0 do colorbg(7)
 				else do colorbg(0)
+
 				put(x,y, x+y*16)
 			}
 		}
 
+		color(7); colorbg(0)
+		put_strf(0,17, "Hello, [c8][b7]World[b0][c7]! PRINT TEST!")
+
 		rl.EndDrawing()
+
+		if _clear_mem_page > 0 {
+			_clear_mem_page -= 1
+			if _clear_mem_page == 0 {
+				neg1 :i64= -1
+				win32.SetProcessWorkingSetSizeEx(win32.GetCurrentProcess(),
+					transmute(win32.SIZE_T)neg1, transmute(win32.SIZE_T)neg1, 0)
+			}
+		}
 	}
 	rl.UnloadTexture(ATLAS)
 
 	rl.CloseWindow()
 }
 
+put_strf :: proc(x,y: int, str: string) {
+	p := 0
+	i := 0
+	esc : bool
+	estate :rune= 0
+	evalue := 0
+
+	skip := 0
+
+	for b in str {
+		if skip > 0 {
+			skip -= 1
+			i += 1
+			continue
+		}
+		draw : bool
+		if !esc {
+			if b == '[' do esc = true
+			else do draw = true
+		} else {
+			if b == '[' {
+				esc = false
+				draw = true
+			} else if b == ']' {
+				if estate == 'c' do color(evalue)
+				else if estate == 'b' do colorbg(evalue)
+				estate = 0
+				evalue = 0
+				esc = false
+			} else {
+				if estate == 0 {
+					estate = b
+				} else {
+					left := str[i:]
+					v, ok := strconv.parse_int(left, n=&skip)
+					evalue = v
+					if skip>0 do skip -= 1
+				}
+			}
+		}
+		if draw {
+			put(x+p, y, cast(int)(b))
+			p += 1
+		}
+		i += 1
+	}
+}
+put_str :: proc(x,y: int, str: string) {
+	i := 0
+	for b in str {
+		put(x+i, y, cast(int)(b))
+		i += 1
+	}
+}
 put :: proc(x,y: int, sprid: int) {
 	ux := cast(c.int)(sprid % ATLAS_W)
 	uy := cast(c.int)(sprid / ATLAS_W)
