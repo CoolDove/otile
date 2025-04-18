@@ -70,4 +70,17 @@ update :: proc() {
 	transparentbg(0)
 	color(7); colorbg(0)
 	put_strf(1,0, "Hello, [c8][b7]World[b0][c7]! PRINT TEST!")
+
+	color(7); colorbg(8); transparentbg(-1)
+	box(4,4, 12,8)
+	put_strf(4+1,4, "Box!")
+	colorbg(0)
+	msgbox(6,20, "Hello, world!")
+	colorbg(1)
+	msgbox(8,16, "E")
+}
+
+Option :: struct {
+	child : ^Option,
+	next : ^Option,
 }
